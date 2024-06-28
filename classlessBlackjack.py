@@ -179,8 +179,6 @@ def simStats(simulation):
     
     return "EV|Var|StDev",ev, var, sig
 
-def graphSims(strategy):
-    pass
 #Example
 if __name__ == "__main__":
     
