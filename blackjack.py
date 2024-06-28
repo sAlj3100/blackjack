@@ -258,6 +258,10 @@ class Game:
 
     def playMany(self, numRounds):
         
+        if numRounds == 1:
+            self.bjRound()
+            return
+        
         for i in range(0,numRounds):
             self.bjRound()
             
@@ -270,5 +274,11 @@ class Game:
 if __name__ == "__main__":
     
     print("Blackjack good game yes.")
+    try:
+        numRounds = int(input("How many rounds?"))
+    
+    except ValueError:
+        print("Input positive integer.")
+    
     game = Game()
-    game.bjRound()
+    game.playMany()
