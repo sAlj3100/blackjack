@@ -1,22 +1,18 @@
 import player
 
+class bjDealer(player.Player):
 
-class Dealer(player.Player()):
-    
-    def __init__(self, startChips, dealerLim):
-        self.facedown = []
-        self.hand = []
-        self.cap = dealerLim
-        self.chips = startChips
-        self.state = 0 
-        
-        
+    facedown = []
+
     def flip(self):
         self.hand.append(self.facedown.pop())
         return 
-
-
-    def isHit(self):
-        if self.score <self.cap:
+    
+    def setFaceDown(self):
+        self.facedown.append(self.hand.pop())
+        return
+    
+    def isHit(self,limit):
+        if self.score < limit:
             return True
         return False
