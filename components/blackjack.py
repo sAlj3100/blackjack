@@ -6,22 +6,19 @@ START_CHIPS = 1000
 PAYOUT = 10
 DECK_LIMIT = 26
 BJ_MULTIPLIER = 2
-BJ_PAYOUT = BJ_MULTIPLIER*PAYOUT
 DEALER_LIM = 17
 
+class Blackjack:
 
-class Game:
-    
-    
-    def __init__(self, startChips, deckMin, dealerLimit, payout, bjPayout):
-        self.shoe = deck.Deck()
+    def __init__(self, startChips, deckMin, dealerLimit, payout, bjMultiplier):
+        self.deck = deck.Deck()
         self.player = player.Player(startChips)
-        self.dealer = bjDealer.Dealer(startChips, dealerLimit)
+        self.dealer = bjDealer.bjDealer(startChips, dealerLimit)
         self.result = 0
         self.state = (0,0,0,0,'|',0,0,0,0)
         self.deckMin = deckMin
         self.payout = payout
-        self.bjPayout = bjPayout
+        self.bjPayout = payout*bjMultiplier
 
     def cardValue(self, card):
         match card.rank: 
@@ -39,14 +36,11 @@ class Game:
                 aces += 1
         return aces
 
-
     def handScore(self,agent):
         newScore = 0 
         aces = self.aceCount()
-        
-        for card in self.hand:
-            newScore += self.cardValue(card)
-            
+        for card in self.agent.hand:
+            newScore += self.cardValue(card)    
         if newScore > 21 and aces > 0:
                 while aces > 0 and newScore > 21:
                     newScore -= 10
@@ -54,15 +48,12 @@ class Game:
         agent.score = newScore
         return agent.score
 
-
     def isBlackjack(self, agent):
         if agent.handScore() == 21 and len(agent.hand) == 2:
             agent.state = 1
             return True
 
-
     def isBust(self,agent):
-        
         if self.handScore(agent) > 21:
             agent.state = -1
             return True
@@ -73,68 +64,49 @@ class Game:
                     self.handScore(self.dealer), self.dealer.printHand(), self.dealer.state, self.dealer.chips)
         return self.state
 
-
     def resetRound(self):
         self.player.reset()
         self.dealer.reset()
-        
         if len(self.deck) < self.deckLimit:
             self.shoe.resetDeck()
-        
         return
-
 
     def deal(self, agent):        
         agent.hand.append(self.deck.pop())
         self.updateState()
         return
 
-
     def gameSetup(self):
-        
-        self.shuffleDeck()
-        
+        self.deck.shuffleDeck()
         for i in range(0,2):
             self.deal(self.player)
-        
         for i in range(0,2):
             self.deal(self.dealer)
-        self.dealer.facedown.append(self.dealer.hand.pop())
-        
+        self.dealer.setFaceDown()
         self.updateState()
-        
-        return self.state
-
+        return 
 
     def dealerPlay(self):
         #Dealer has a limit on hand value
         self.dealer.flip()
-        
         while self.dealer.isHit():
             self.deal(self.dealer)
             if self.isBust(self.dealer):
                 self.dealer.state = -1
                 break
-        
         self.updateState()
-        
         return 
 
-
     def playerPlay(self):
-        
         print(self.state)
         playerAction = input("Stand or Hit? ")
-        
         if playerAction == "Hit":
             self.deal(self.player)
             self.updateState()
-                
-            if self.player.isBust():
-                self.player.play = -1
+            if self.isBust(self.player):
+                self.player.state = -1
                 self.updateState()
                 return False
-        
         else:
             return False
 
@@ -171,9 +143,7 @@ class Game:
                 print("Draw!")
 
     def bjRound(self):
-        
         self.gameSetup()
-        
         #Check natty BJ.
         if self.player.isBlackjack():
             self.dealer.flip()
@@ -188,12 +158,10 @@ class Game:
             print(self.state)
         else:
             self.endRound()
-        
         self.endRound()
         self.printWinner()
-        
+
     def playMany(self, numRounds):
-        
         if numRounds == 1:
             self.bjRound()
             return
@@ -203,11 +171,9 @@ class Game:
             
             if self.player.isBrokie():
                 break
-                
         return self.state
-    
+
 if __name__ == "__main__":
-    
     print("Blackjack good game yes.")
     haveInt = False
     while haveInt == False:
@@ -216,6 +182,5 @@ if __name__ == "__main__":
             haveInt = True
         except ValueError:
             print("Input positive integer.")
-    
-    game = Game()
+    game = Blackjack()
     game.playMany(numRounds)

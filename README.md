@@ -16,5 +16,6 @@ A monte carlo simulation is implemented to determine the EV and Variance of the 
 ## Task list
 - [x] A working blackjack simulator.
 - [x] A way to test a player strategy.
+- [ ] Extend to Poker.
 - [ ] Splitting and doubling down.
 - [ ] Explore AI algorithms (genetic learning, reinforcement learning).

@@ -1,6 +1,5 @@
 import numpy as np
 import random as rand
-import matplotlib as plt
 
 
 class Deck:
@@ -18,7 +17,6 @@ class Deck:
     def deal(self):
         if len(self.cards)>1:
             return self.cards.pop()
-
 
 def handVal(hand):
     
@@ -42,20 +40,17 @@ def handVal(hand):
             
     return value
 
-
 def isBlackjack(hand):
     if handVal(hand) == 21 and len(hand) == 2: 
         return True
     
     return False
 
-
 def isBust(hand):
     if handVal(hand) > 21:
         
         return True
     return False
-
 
 def checkState(playerHand, dealerHand):
     
@@ -68,7 +63,6 @@ def checkState(playerHand, dealerHand):
     if handVal(playerHand) > handVal(dealerHand):
         return  True
 
-
 def checkWin(state):
     if state == True:
         return 'Player Win'
@@ -77,7 +71,6 @@ def checkWin(state):
         return 'Draw'
     
     return 'Player Lose'
-
 
 def smartPlayer(hand, dealer, strategy):
     #Player hand value -> pIndex, Dealer hand value -> dIndex
@@ -100,7 +93,6 @@ def smartPlayer(hand, dealer, strategy):
         
     else:
         return False
-
 
 def smartBlackjack(strategy):
     #Dealer is Soft 17
@@ -140,13 +132,11 @@ def smartBlackjack(strategy):
         
     return player, handVal(player), dealer, handVal(dealer),checkWin(checkState(player,dealer))
 
-
 def simulate(strategy,trials):
     
     wins = 0
     losses = 0
     draws = 0 
-    
     playerChips = 1000
     dealerChips = 1000
     
