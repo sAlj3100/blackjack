@@ -3,7 +3,7 @@ import random as rand
 
 class Deck:
     suits = ['H','S','D','C']
-    ranks= [i for i in range(2,11)] + ['J','Q','K','A']
+    ranks = [i for i in range(2,11)] + ['J','Q','K','A']
 
     def __init__(self):
         self.cards = [(rank, suit) for rank in Deck.ranks for suit in Deck.suits]
@@ -41,12 +41,10 @@ def handVal(hand):
 def isBlackjack(hand):
     if handVal(hand) == 21 and len(hand) == 2: 
         return True
-    
     return False
 
 def isBust(hand):
     if handVal(hand) > 21:
-        
         return True
     return False
 
@@ -55,7 +53,7 @@ def checkState(playerHand, dealerHand):
     if isBust(playerHand) == False or handVal(playerHand) < handVal(dealerHand):
         return False
     
-    if handVal(playerHand)!= False and handVal(playerHand) == handVal(dealerHand):
+    if handVal(playerHand) != False and handVal(playerHand) == handVal(dealerHand):
         return None
     
     if handVal(playerHand) > handVal(dealerHand):
@@ -130,7 +128,7 @@ def smartBlackjack(strategy):
         
     return player, handVal(player), dealer, handVal(dealer),checkWin(checkState(player,dealer))
 
-def simulate(strategy,trials):
+def simulate(strategy, trials):
     
     wins = 0
     losses = 0
@@ -138,7 +136,7 @@ def simulate(strategy,trials):
     playerChips = 1000
     dealerChips = 1000
     
-    for i in range(0,trials):
+    for i in range(0, trials):
         outcome = smartBlackjack(strategy)[-1]
         
         if outcome == 'Bust!' or outcome == 'Player Lose':
