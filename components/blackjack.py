@@ -1,6 +1,7 @@
 import player
 import deck
 import bjDealer
+import card
 
 START_CHIPS = 1000
 PAYOUT = 10
@@ -10,9 +11,8 @@ BJ_PAYOUT = BJ_MULTIPLIER*PAYOUT
 DEALER_LIM = 17
 
 class Blackjack:
-    
     def __init__(self, startChips, payout, bjMultiplier, deckMin, dealerLimit):
-        self.deck = deck.Deck()
+        self.deck = deck.Deck(([i for i in range(2,11)] + ['J','Q','K','A']), ['H','S','D','C'])
         self.player = player.Player(startChips)
         self.dealer = bjDealer.bjDealer(startChips)
         self.result = 0
@@ -23,7 +23,7 @@ class Blackjack:
         self.dealerLimit = dealerLimit
 
     def cardValue(self, card):
-        match card.rank: 
+        match card.getRank(): 
             case "J"|"Q"|"K":
                 return 10
             case "A":
@@ -34,7 +34,7 @@ class Blackjack:
     def aceCount(self, agent):
         aces = 0
         for card in agent.hand:
-            if card.rank == "A":
+            if card.getRank() == "A":
                 aces += 1
         return aces
 
@@ -51,7 +51,6 @@ class Blackjack:
                     newScore -= 10
                     aces -= 1
         agent.score = newScore
-        return
 
     def isBlackjack(self, agent):
         if agent.score == 21 and len(agent.hand) == 2:
@@ -73,24 +72,20 @@ class Blackjack:
         self.player.reset()
         self.dealer.reset()
         if len(self.deck) < self.deckMin:
-            self.deck.resetDeck()
-        return
+            self.deck.reset()
 
     def deal(self, agent):        
         agent.hand.append(self.deck.cards.pop())
         self.updateState()
-        return
 
     def gameSetup(self):
-        self.deck.shuffleDeck()
+        self.deck.shuffle()
         for i in range(0,2):
             self.deal(self.player)
         for i in range(0,2):
             self.deal(self.dealer)
         self.dealer.facedown.append(self.dealer.hand.pop())
         self.updateState()
-        return 
-
 
     def dealerPlay(self):
         #Dealer has a limit on hand value
@@ -101,7 +96,6 @@ class Blackjack:
                 self.dealer.state = -1
                 break
         self.updateState()
-        return 
 
     def playerPlay(self):
         print(self.state)
