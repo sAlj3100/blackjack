@@ -1,7 +1,6 @@
 import numpy as np
 import random as rand
 
-
 class Deck:
     suits = ['H','S','D','C']
     ranks= [i for i in range(2,11)] + ['J','Q','K','A']
