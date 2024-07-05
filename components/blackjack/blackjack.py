@@ -1,6 +1,6 @@
-import player
-import deck
-import bjDealer
+from components.player import player
+from components.deck import deck
+from components.bjDealer import bjDealer
 
 START_CHIPS = 1000
 PAYOUT = 10

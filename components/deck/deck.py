@@ -1,5 +1,5 @@
 import random as rand
-import card
+from components.card import card
 
 class Deck:
     def __init__(self, ranks, suits):

@@ -1,4 +1,4 @@
-import player
+from components.player import player
 
 class bjDealer(player.Player):
     facedown = []

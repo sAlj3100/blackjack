@@ -1,5 +1,4 @@
-import pytest 
-import deck
+from components.deck import deck
 
 TEST_DECK = deck.Deck(([i for i in range(2,11)] + ['J','Q','K','A']), ['H','S','D','C'])
 NUM_CARDS = len(TEST_DECK)
