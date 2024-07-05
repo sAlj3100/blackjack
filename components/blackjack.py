@@ -1,7 +1,6 @@
 import player
 import deck
 import bjDealer
-import card
 
 START_CHIPS = 1000
 PAYOUT = 10
@@ -23,7 +22,7 @@ class Blackjack:
         self.dealerLimit = dealerLimit
 
     def cardValue(self, card):
-        match card.getRank(): 
+        match card.rank: 
             case "J"|"Q"|"K":
                 return 10
             case "A":
@@ -113,14 +112,15 @@ class Blackjack:
 
     def endRound(self):
         if self.player.state > self.dealer.state:
-            #Win with a natty BJ
-            if self.isBlackjack(player) == True:
-                self.player.gainChips(self.bjPayout)
-                self.dealer.loseChips(self.bjPayout)
-            #Win normally
-            else:
-                self.player.gainChips(self.payout)
-                self.dealer.gainChips(self.payout)
+            match self.isBlackjack(self.player):
+                #Win with a natty BJ
+                case True: 
+                    self.player.gainChips(self.bjPayout)
+                    self.dealer.loseChips(self.bjPayout)
+                #Win normally
+                case False:
+                    self.player.gainChips(self.payout)
+                    self.dealer.gainChips(self.payout)
             self.updateState()
             return 1
         #Lose
@@ -146,22 +146,26 @@ class Blackjack:
     def bjRound(self):
         self.gameSetup()
         #Check natty BJ.
-        if self.isBlackjack(self.player):
-            self.dealer.flip()
-            self.isBlackjack(self.dealer)
-            self.endRound()
-            self.updateState()
-        else:
-            while self.playerPlay()!= False:
-                self.playerPlay()
-        if self.isBust(player) == False:
-            self.dealerPlay()
-            print(self.state)
-        else:
-            self.endRound()
+        match self.isBlackjack(self.player):
+            case True:
+            #If dealer BJ, draw
+                self.dealer.flip()
+                self.isBlackjack(self.dealer)
+                self.endRound()
+                self.updateState()
+            case False:
+                while self.playerPlay()!= False:
+                    self.playerPlay()
+                    
+        match self.isBust(self.player):
+            case False:
+                self.dealerPlay()
+                print(self.state)
+            case True:
+                self.endRound()
         self.endRound()
         self.printWinner()
-        
+
     def playMany(self, numRounds):
         if numRounds == 1:
             self.bjRound()
@@ -171,7 +175,7 @@ class Blackjack:
             if self.player.isBrokie():
                 break
         return self.state
-    
+
 if __name__ == "__main__":
     print("Blackjack good game yes.")
     haveInt = False

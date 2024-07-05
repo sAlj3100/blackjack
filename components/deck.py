@@ -4,16 +4,18 @@ import card
 class Deck:
     def __init__(self, ranks, suits):
         self.cards= [card.Card(rank, suit) for rank in ranks for suit in suits]
-    
-    def printDeck(self):
+        self.ranks = ranks
+        self.suits = suits
+        
+    def print(self):
         return [str(card) for card in self.cards]
     
     def shuffle(self):
-        return rand.shuffle(self.cards)
+        rand.shuffle(self.cards)
     
-    def dealCard(self):
+    def deal(self):
         return self.cards.pop()
     
     def reset(self):
-        self.cards = [card.Card(rank, suit) for rank in Deck.ranks for suit in Deck.suits]
-        return rand.shuffle(self.cards)
+        self.cards = [card.Card(rank, suit) for rank in self.ranks for suit in self.suits]
+        self.shuffle()
