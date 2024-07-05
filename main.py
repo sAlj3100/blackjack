@@ -1,5 +1,4 @@
-import sys
-
+import blackjack
 
 START_CHIPS = 1000
 PAYOUT = 10
@@ -8,7 +7,6 @@ DECK_LIMIT = 26
 BJ_MULT = 2
 BJ_PAYOUT = BJ_MULT*PAYOUT
 DEALER_LIM = 17
-
 
 if __name__ == "__main__":
     
@@ -21,5 +19,5 @@ if __name__ == "__main__":
         except ValueError:
             print("Input positive integer.")
     
-    game = blackjack.Game()
+    game = blackjack.Blackjack()
     game.playMany(numRounds)
