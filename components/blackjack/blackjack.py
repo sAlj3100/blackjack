@@ -1,6 +1,6 @@
-from components.player import player
-from components.deck import deck
-from components.bjDealer import bjDealer
+from ..player import player
+from ..deck import deck
+from ..bjDealer import bjdealer
 
 START_CHIPS = 1000
 PAYOUT = 10
@@ -13,7 +13,7 @@ class Blackjack:
     def __init__(self, startChips, payout, bjMultiplier, deckMin, dealerLimit):
         self.deck = deck.Deck(([i for i in range(2,11)] + ['J','Q','K','A']), ['H','S','D','C'])
         self.player = player.Player(startChips)
-        self.dealer = bjDealer.bjDealer(startChips)
+        self.dealer = bjdealer.bjDealer(startChips)
         self.result = 0
         self.state = (0,0,0,0,'|',0,0,0,0)
         self.deckMin = deckMin
@@ -62,9 +62,9 @@ class Blackjack:
             return True
     
     def updateState(self):
-        self.state = (self.player.printHand(),self.handScore(self.player), self.player.state, self.player.chips, 
+        self.state = (self.player.printHand(),self.handScore(self.player), self.player.chips, 
                     '|', 
-                    self.handScore(self.dealer), self.dealer.printHand(), self.dealer.state, self.dealer.chips)
+                    self.dealer.printHand(), self.handScore(self.dealer), self.dealer.chips)
         return self.state
 
     def resetRound(self):
