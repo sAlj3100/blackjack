@@ -1,11 +1,10 @@
-import blackjack
+from components.blackjack import blackjack
 
 START_CHIPS = 1000
 PAYOUT = 10
 SHOE_SIZE = 1
 DECK_LIMIT = 26
-BJ_MULT = 2
-BJ_PAYOUT = BJ_MULT*PAYOUT
+BJ_MULTIPLIER = 2
 DEALER_LIM = 17
 
 if __name__ == "__main__":
@@ -19,5 +18,5 @@ if __name__ == "__main__":
         except ValueError:
             print("Input positive integer.")
     
-    game = blackjack.Blackjack()
+    game = blackjack.Blackjack(START_CHIPS, PAYOUT, BJ_MULTIPLIER, DEALER_LIM)
     game.playMany(numRounds)
