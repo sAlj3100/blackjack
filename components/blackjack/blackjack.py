@@ -33,7 +33,7 @@ class Blackjack:
     def aceCount(self, agent):
         aces = 0
         for card in agent.hand:
-            if card.getRank() == "A":
+            if card.rank == "A":
                 aces += 1
         return aces
 
@@ -83,7 +83,7 @@ class Blackjack:
             self.deal(self.player)
         for i in range(0,2):
             self.deal(self.dealer)
-        self.dealer.facedown.append(self.dealer.hand.pop())
+        self.dealer.setFaceDown()
         self.updateState()
 
     def dealerPlay(self):
