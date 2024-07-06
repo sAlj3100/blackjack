@@ -84,6 +84,7 @@ class Blackjack:
         for i in range(0,2):
             self.deal(self.dealer)
         self.dealer.setFaceDown()
+        self.dealer.setFaceDown()
         self.updateState()
 
     def dealerPlay(self):
@@ -102,9 +103,8 @@ class Blackjack:
         if playerAction == "Hit":
             self.deal(self.player)
             self.updateState()
-                
-            if self.player.isBust():
-                self.player.play = -1
+            if self.isBust(self.player):
+                self.player.state = -1
                 self.updateState()
                 return False
         else:
@@ -166,6 +166,7 @@ class Blackjack:
         self.endRound()
         self.printWinner()
 
+
     def playMany(self, numRounds):
         if numRounds == 1:
             self.bjRound()
@@ -175,6 +176,7 @@ class Blackjack:
             if self.player.isBrokie():
                 break
         return self.state
+
 
 if __name__ == "__main__":
     print("Blackjack good game yes.")
