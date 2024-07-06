@@ -1,4 +1,4 @@
-from components.card import card
+from components.deck.card import card
 
 def test_rank():
     assert card.Card(2, 'H').rank == 2

@@ -1,2 +1,2 @@
-from components.blackjack import blackjack
+from blackjack import blackjack
 
