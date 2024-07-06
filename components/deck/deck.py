@@ -1,5 +1,5 @@
 import random as rand
-from ..card import card
+from card import card
 
 class Deck:
     def __init__(self, ranks, suits):

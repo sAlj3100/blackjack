@@ -1,6 +1,6 @@
-from ..player import player
-from ..deck import deck
-from ..bjDealer import bjdealer
+from components.player import player
+from components.deck import deck
+from components.player.bjDealer import bjdealer
 
 START_CHIPS = 1000
 PAYOUT = 10

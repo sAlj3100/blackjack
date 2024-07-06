@@ -1,4 +1,4 @@
-from components.blackjack import blackjack
+from blackjack import blackjack
 
 START_CHIPS = 1000
 PAYOUT = 10

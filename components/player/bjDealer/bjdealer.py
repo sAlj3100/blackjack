@@ -1,4 +1,5 @@
-from ..player import player
+
+from player import player
 
 class bjDealer(player.Player):
     facedown = []
