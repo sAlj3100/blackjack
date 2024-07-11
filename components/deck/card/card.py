@@ -3,7 +3,6 @@ class Card:
     def __init__(self, rank, suit):
         self.rank = rank
         self.suit = suit
-        return
     
     def __str__(self):
-        return (f"{self.rank},{self.suit}")
+        return (f'{self.rank}',f'{self.suit}')
