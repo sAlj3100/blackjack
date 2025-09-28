@@ -1,26 +1,15 @@
-class Player:
+from .agent import Agent
+
+class Player(Agent):
     def __init__(self, startChips):
-        self.hand = []
-        self.state = 0
+        super().__init__()
         self.chips = startChips
-        self.score = 0
-
-    def printHand(self):
-        print([str(card for card in self.hand)])
-
-    def getCard(self, card):
-        self.hand.append(card)
     
     def isBrokie(self):    
-        if self.chips == 0:
-            return True
+        return self.chips == 0
 
     def gainChips(self, numChips):
         self.chips += numChips
 
     def loseChips(self, numChips):
         self.chips -= numChips
-
-    def reset(self):
-        self.hand = []
-        self.state = 0
