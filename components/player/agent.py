@@ -17,3 +17,4 @@ class Agent:
         self.score = 0
         self.bust = False
         self.blackjack = False
+        self.win = False

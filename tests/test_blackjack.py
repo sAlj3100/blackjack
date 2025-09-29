@@ -1,6 +1,5 @@
 import pytest
-from blackjack import blackjack
-from components.deck import card
+from blackjack.blackjack import Blackjack
 
 class MockCard:
     def __init__(self, rank):
@@ -10,7 +9,7 @@ class MockCard:
 
 @pytest.fixture
 def game():
-    testgame = blackjack.Blackjack(1000,100,2,26,17)
+    testgame = Blackjack(1000,100,2,26,17)
     return testgame
 
 def test_handScore(game):

@@ -1,16 +1,15 @@
 import pytest
 from components.player.bjdealer import bjDealer
-from components.deck import card
 
 class MockCard:
     def __init__(self, rank):
         self.rank = rank
     def __str__(self):
         return str(self.rank)
-    
+
+@pytest.fixture    
 def dealer():
-    testdealer = bjDealer()
-    return testdealer
+    return bjDealer()
 
 def test_initialisation(dealer):
     assert dealer.hand == []
