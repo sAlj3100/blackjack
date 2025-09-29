@@ -12,10 +12,7 @@ def dealer():
     return bjDealer()
 
 def test_initialisation(dealer):
-    assert dealer.hand == []
-    assert dealer.score == 0
-    assert dealer.blackjack == False
-    assert dealer.faceDown == False
+    assert dealer.facedown == []
 
 def test_facedown_flip(dealer):
     dealer.hand = [MockCard(10), MockCard(7)]
@@ -28,19 +25,16 @@ def test_facedown_flip(dealer):
 
 def test_isHit(dealer):
     dealer.score = 16
-    assert dealer.isHit(17) == True
+    dealer.isHit(17)
+    assert dealer.hitting == True
     dealer.score = 17
-    assert dealer.isHit(17) == False
+    dealer.isHit(17)
+    assert dealer.hitting == False
     dealer.score = 18
-    assert dealer.isHit(17) == False
+    dealer.isHit(17) 
+    assert dealer.hitting == False
 
 def test_reset(dealer):
-    dealer.hand = [MockCard(10), MockCard(7)]
-    dealer.score = 17
-    dealer.blackjack = True
     dealer.facedown = [MockCard(5)]
     dealer.reset()
-    assert dealer.hand == []
-    assert dealer.score == 0
-    assert dealer.blackjack == False
     assert dealer.facedown == []

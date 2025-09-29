@@ -4,6 +4,7 @@ class bjDealer(Agent):
     def __init__(self):
         super().__init__()
         self.facedown = []
+        self.hitting = True
 
     def flip(self):
         if self.facedown:
@@ -14,8 +15,12 @@ class bjDealer(Agent):
             self.facedown.append(self.hand.pop())
 
     def isHit(self,limit):
-        return self.score < limit
+        if self.score >= limit:
+            self.hitting = False
+        else:
+            self.hitting = True
     
     def reset(self):
         super().reset()
         self.facedown = []
+        self.hitting = True

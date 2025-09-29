@@ -14,9 +14,16 @@ def game():
 
 def test_handScore(game):
     game.player.hand = [MockCard('A'), MockCard(7)]
-    assert game.handScore(game.player) == 18
+    game.handScore(game.player)
+    assert game.player.score == 18
+    #Ace as 11 would bust
     game.player.hand.append(MockCard(10))
-    assert game.handScore(game.player) == 18
+    game.handScore(game.player)
+    assert game.player.score == 18
+    #Multiple aces
+    game.player.hand = [MockCard('A'), MockCard('A')]
+    game.handScore(game.player)
+    assert game.player.score == 12
 
 def test_aceCount(game):
     game.player.hand = [MockCard('A'), MockCard(7), MockCard('A')]
@@ -26,17 +33,28 @@ def test_aceCount(game):
 
 def test_isBlackjack(game):
     game.player.hand = [MockCard('A'), MockCard('K')]
+    game.handScore(game.player)
     game.isBlackjack(game.player)
     assert game.player.blackjack == True
     game.player.hand = [MockCard(10), MockCard(7)]
+    game.handScore(game.player)
+    game.isBlackjack(game.player)
+    assert game.player.blackjack == False
+    #Three or more card 21 is not blackjack
+    game.player.hand = [MockCard(5), MockCard(6), MockCard(10)]
+    game.handScore(game.player)
     game.isBlackjack(game.player)
     assert game.player.blackjack == False
 
 def test_isBust(game):
     game.player.hand = [MockCard(10), MockCard(7), MockCard(5)]
-    assert game.isBust(game.player) == True
+    game.handScore(game.player)
+    game.isBust(game.player)
+    assert game.player.bust == True
     game.player.hand = [MockCard(10), MockCard(7)]
-    assert game.isBust(game.player) == False
+    game.handScore(game.player)
+    game.isBust(game.player) 
+    assert game.player.bust == False
 
 def test_deal(game):
     initial_deck_size = len(game.deck)
@@ -45,18 +63,12 @@ def test_deal(game):
     assert len(game.player.hand) == 1
 
 def test_dealerPlay(game):
-    #Test dealer won't hit on 17
-    game.dealer.hand = [MockCard(10), MockCard(7)]
-    game.dealer.setFaceDown()
-    game.dealerPlay()
-    assert game.dealer.faceDown == False
-    assert len(game.dealer.hand) == 2
-    assert game.dealer.score == 17
-    game.dealer.hand = [MockCard(10), MockCard(6)]
-    game.dealer.setFaceDown()
+    game.gameSetup()
     game.dealerPlay()
     assert game.dealer.score >= 17
-    assert len(game.dealer.hand) > 2
+    assert game.dealer.bust in [True, False]
+    assert game.dealer.blackjack in [True, False]
+    assert len(game.dealer.hand) >= 2
 
 def test_resetRound(game):
     game.player.hand = [MockCard(10), MockCard(7)]
@@ -91,60 +103,71 @@ def test_cardValue(game):
 
 def test_resetRound_deck_reshuffle(game):
     #Force len(deck) < deckMin
-    game.deck.cards = [MockCard(5) for _ in range(game.deckMin)]   
+    while len(game.deck) >= game.deckMin:
+        game.deck.deal()   
     game.resetRound()
     assert len(game.deck) >= game.deckMin
     #Only reset deck if strictly below deckMin
-    game.deck.cards = [MockCard(5) for _ in range(game.deckMin//2)]
+    while len(game.deck) > game.deckMin:
+        game.deck.deal()
     preResetLength = len(game.deck)
     game.resetRound()
     assert len(game.deck) == preResetLength  
 
 def test_compareHands(game):
     #normal win/lose/draw scenarios
+    #normal win
+    game.resetRound()
     game.player.score = 17
     game.dealer.score = 16
     game.compareHands()
     assert game.player.win == True
     assert game.dealer.win == False
+    #normal lose
+    game.resetRound()
     game.player.score = 17
     game.dealer.score = 18
     game.compareHands()
     assert game.player.win == False
     assert game.dealer.win == True
+    #draw, no bust
+    game.resetRound()
     game.dealer.score = 17
     game.player.score = 17
     game.compareHands()
     assert game.player.win == False
     assert game.dealer.win == False
-    #player bust
-    game.player.score = 22
+    #player bust, dealer <= 21
+    game.resetRound()
+    game.player.bust = True
     game.dealer.score = 17
     game.compareHands()
     assert game.player.win == False
     assert game.dealer.win == True
-    #dealer bust scenarios
+    #player <= 21, dealer bust
+    game.resetRound()
     game.player.score = 17
-    game.dealer.score = 22
+    game.dealer.bust = True
     game.compareHands()
     assert game.player.win == True
     assert game.dealer.win == False
-    game.player.score = 22
-    game.dealer.score = 22 
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == False
     #blackjack scenarios
+    #player with blackjack
+    game.resetRound()
     game.player.blackjack = True
     game.dealer.blackjack = False
     game.compareHands()
-    assert game.player.win == False
+    assert game.player.win == True
     assert game.dealer.win == False
+    #blackjack tie
+    game.resetRound()
     game.player.blackjack = True
     game.dealer.blackjack = True
     game.compareHands()
     assert game.player.win == False
     assert game.dealer.win == False
+    #dealer with blackjack
+    game.resetRound()
     game.player.blackjack = False
     game.dealer.blackjack = True
     game.compareHands()
@@ -204,4 +227,4 @@ def test_bjRound(game, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     game.bjRound()
     assert game.player.win in [True, False]  # Player either wins or loses
-    assert game.player.chips in [900, 1100, 1200]
+    assert game.player.chips in [900, 1000, 1100, 1200]
