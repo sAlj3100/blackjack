@@ -102,7 +102,6 @@ class Blackjack:
         if self.player.blackjack:
             print("You hit Blackjack!")
             return
-        
         while True:    
             try:
                 playerAction = input("Stand (s) or Hit? (h): ").strip().lower()

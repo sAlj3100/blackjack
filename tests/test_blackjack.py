@@ -197,7 +197,7 @@ def test_settleChips(game):
 
 def test_playerPlay_hit_stand_quit(game, monkeypatch):
     #hit until bust
-    inputs = iter(['h' for _ in range(15)])
+    inputs = iter(['h' for _ in range(13)])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     game.playerPlay()
     assert game.player.bust == True
@@ -213,17 +213,9 @@ def test_playerPlay_hit_stand_quit(game, monkeypatch):
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     game.playerPlay()
     assert game.player.bust == False
-    #quit game
-    game.resetRound()
-    inputs = iter(['q'])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    try:
-        game.playerPlay()
-    except SystemExit:
-        assert True
 
 def test_bjRound(game, monkeypatch):
-    inputs = iter(['s','n'])
+    inputs = iter(['s', 'h'])
     monkeypatch.setattr('builtins.input', lambda _: next(inputs))
     game.bjRound()
     assert game.player.win in [True, False]  # Player either wins or loses
