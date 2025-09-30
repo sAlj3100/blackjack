@@ -54,12 +54,10 @@ class Blackjack:
         agent.score = newScore
 
     def isBlackjack(self, agent):
-        if agent.score == 21 and len(agent.hand) == 2:
-            return True
+        agent.blackjack = agent.score == 21 and len(agent.hand) == 2
 
     def isBust(self,agent):
-        if agent.score > 21:
-            return True
+        agent.bust = agent.score > 21
 
     def resetRound(self):
         self.player.reset()
@@ -83,20 +81,27 @@ class Blackjack:
     def dealerPlay(self):
         self.dealer.flip()
         self.log_state()
-        if self.isBlackjack(self.dealer):
-            self.dealer.blackjack = True
-            print("Game is rigged gg!")
+        self.isBlackjack(self.dealer)
+        if self.dealer.blackjack:
+            print("Game is rigged!")
             return
-        while self.dealer.isHit(self.dealerLimit):
+        while self.dealer.hitting:
+            print("Dealer hits.")
             self.deal(self.dealer)
             self.log_state()
-            if self.isBust(self.dealer):
-                self.dealer.bust = True
-                print("Dealer busted!")
-                break
-            return
+            self.dealer.isHit(self.dealerLimit)
+            self.isBust(self.dealer)
+            if self.dealer.bust: 
+                print("Dealer busts!")
+                return
+        print("Dealer stands.")
+        return
 
     def playerPlay(self):
+        self.isBlackjack(self.player)
+        if self.player.blackjack:
+            print("You hit Blackjack!")
+            return
         while True:    
             try:
                 playerAction = input("Stand (s) or Hit? (h): ").strip().lower()
@@ -104,54 +109,56 @@ class Blackjack:
                 print("\nInterrupted, goodbye...")
                 return
             if playerAction == "h":
+                print("You hit.")
                 self.deal(self.player)
+                self.handScore(self.player)
+                self.isBust(self.player)
                 self.log_state()
-                if self.isBust(self.player):
-                    self.log_state()
-                    self.player.bust = True
-                    print("You busted!")    
+                if self.player.bust:
+                    print("You bust!")    
                     return 
             elif playerAction == "s":
+                print("You stand.")
                 return
             else:
                 print("Invalid input, enter 'h' to Hit or 's' to Stand.")
 
     def compareHands(self):
-        #player <= 21, dealer bust
-        if self.player.bust == False and self.dealer.bust == True:
-            if self.player.blackjack:
-                self.player.win = True
-                print("You won with a natty BJ!")
-                return
-            print("You won!")
-            return 
-        #player bust, dealer <= 21
-        elif self.player.bust == True and self.dealer.bust == False:
-            self.player.win = False
-            print("You lost!")
-            return 
-        #neither bust, player > dealer
-        elif self.player.score > self.dealer.score:
+        #player and dealer both blackjack
+        if self.player.blackjack and self.dealer.blackjack:
+            return  
+        #player blackjack, dealer not
+        if self.player.blackjack and not(self.dealer.blackjack):
             self.player.win = True
-            print("You won!")
             return
-        #neither bust, player < dealer
-        elif self.player.score < self.dealer.score:
-            self.player.win = False
-            print("You lost!")
+        #dealer blackjack, player not
+        if not(self.player.blackjack) and self.dealer.blackjack:
+            self.dealer.win = True
             return
-        #neither bust, same value
-        else:
-            print("You drew!")
-            return 
+        #player bust, dealer wins
+        if self.player.bust:
+            self.dealer.win = True
+            return
+        #player <= 21, dealer bust
+        if not(self.player.bust) and self.dealer.bust:
+            self.player.win = True
+            return
 
-    def settleChips(self, amount):
+        if self.player.score > self.dealer.score:
+            self.player.win = True
+        elif self.player.score < self.dealer.score:
+            self.dealer.win = True
+        else:
+            return
+        
+    def settleChips(self):
         if self.player.win:
-            self.player.gainChips(amount)
-            return
-        elif self.player.win == False and self.dealer.win == True:
-            self.player.loseChips(amount)
-            return
+            if self.player.blackjack:
+                self.player.chips += self.bjPayout
+            else:
+                self.player.chips += self.payout
+        elif self.dealer.win:
+            self.player.chips -= self.payout
         else:
             return
         
@@ -159,12 +166,7 @@ class Blackjack:
         self.resetRound()
         self.gameSetup()
         self.log_state()
-        if self.player.blackjack:    
-            print("You got a natty BJ!")
-            #Dealer still plays
-            self.dealerPlay()
-        else:
-            self.playerPlay()    
+        self.playerPlay()    
         if self.player.bust:
             #Dealer wins
             self.compareHands()
@@ -172,5 +174,5 @@ class Blackjack:
         self.dealerPlay()
         self.log_state()            
         self.compareHands()
-        self.settleChips(self.bjPayout if self.player.blackjack else self.payout)
+        self.settleChips()
         return
