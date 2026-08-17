@@ -1,222 +1,107 @@
-import pytest
-from blackjack.blackjack import Blackjack
+import unittest
 
-class MockCard:
-    def __init__(self, rank):
-        self.rank = rank
-    def __str__(self):
-        return str(self.rank)
+from blackjack.blackjack import BlackjackGame, Round, RoundResult
+from components.deck.card.card import Card
 
-@pytest.fixture
-def game():
-    testgame = Blackjack(1000,100,2,26,17)
-    return testgame
 
-def test_handScore(game):
-    game.player.hand = [MockCard('A'), MockCard(7)]
-    game.handScore(game.player)
-    assert game.player.score == 18
-    #Ace as 11 would bust
-    game.player.hand.append(MockCard(10))
-    game.handScore(game.player)
-    assert game.player.score == 18
-    #Multiple aces
-    game.player.hand = [MockCard('A'), MockCard('A')]
-    game.handScore(game.player)
-    assert game.player.score == 12
+class ScriptedCardSource:
+    def __init__(self, cards):
+        self.cards = list(cards)
 
-def test_aceCount(game):
-    game.player.hand = [MockCard('A'), MockCard(7), MockCard('A')]
-    assert game.aceCount(game.player) == 2
-    game.player.hand = [MockCard(10), MockCard(7)]
-    assert game.aceCount(game.player) == 0
+    def draw(self):
+        if not self.cards:
+            raise AssertionError("test attempted to draw a card that was not scripted")
+        return self.cards.pop(0)
 
-def test_isBlackjack(game):
-    game.player.hand = [MockCard('A'), MockCard('K')]
-    game.handScore(game.player)
-    game.isBlackjack(game.player)
-    assert game.player.blackjack == True
-    game.player.hand = [MockCard(10), MockCard(7)]
-    game.handScore(game.player)
-    game.isBlackjack(game.player)
-    assert game.player.blackjack == False
-    #Three or more card 21 is not blackjack
-    game.player.hand = [MockCard(5), MockCard(6), MockCard(10)]
-    game.handScore(game.player)
-    game.isBlackjack(game.player)
-    assert game.player.blackjack == False
 
-def test_isBust(game):
-    game.player.hand = [MockCard(10), MockCard(7), MockCard(5)]
-    game.handScore(game.player)
-    game.isBust(game.player)
-    assert game.player.bust == True
-    game.player.hand = [MockCard(10), MockCard(7)]
-    game.handScore(game.player)
-    game.isBust(game.player) 
-    assert game.player.bust == False
+def cards(*ranks):
+    return [Card(rank, "H") for rank in ranks]
 
-def test_deal(game):
-    initial_deck_size = len(game.deck)
-    game.deal(game.player)
-    assert len(game.deck) == initial_deck_size - 1
-    assert len(game.player.hand) == 1
 
-def test_dealerPlay(game):
-    game.gameSetup()
-    game.dealerPlay()
-    assert game.dealer.score >= 17
-    assert game.dealer.bust in [True, False]
-    assert game.dealer.blackjack in [True, False]
-    assert len(game.dealer.hand) >= 2
+class RoundTests(unittest.TestCase):
+    def test_natural_blackjack_pays_three_to_two(self):
+        round_ = Round(ScriptedCardSource(cards("A", 9, "K", 7)))
+        self.assertTrue(round_.is_complete)
+        self.assertEqual(round_.outcome.result, RoundResult.PLAYER_BLACKJACK)
+        self.assertEqual(round_.outcome.payout_multiplier, 1.5)
+        self.assertEqual(round_.outcome.wager_units, 1)
+        self.assertEqual(round_.outcome.net_profit_units, 1.5)
 
-def test_resetRound(game):
-    game.player.hand = [MockCard(10), MockCard(7)]
-    game.player.score = 17
-    game.player.blackjack = True
-    game.dealer.hand = [MockCard(10), MockCard(6)]
-    game.dealer.score = 16
-    game.dealer.blackjack = False
-    game.deck.cards = []
-    game.resetRound()
-    assert game.player.hand == []
-    assert game.player.score == 0
-    assert game.player.blackjack == False
-    assert game.dealer.hand == []
-    assert game.dealer.score == 0
-    assert game.dealer.blackjack == False
-    assert len(game.deck) >= game.deckMin
+    def test_two_natural_blackjacks_push(self):
+        round_ = Round(ScriptedCardSource(cards("A", "A", "K", "K")))
+        self.assertEqual(round_.outcome.result, RoundResult.PUSH)
+        self.assertEqual(round_.outcome.net_profit_units, 0)
 
-def test_gameSetup(game):
-    game.gameSetup()
-    assert len(game.player.hand) == 2
-    assert len(game.dealer.hand) == 1
-    assert len(game.dealer.facedown) == 1
-    assert game.player.score > 0
-    assert game.dealer.score > 0
-    assert len(game.deck) == 52 - 4
+    def test_hit_to_twenty_one_ends_the_player_turn_as_an_ordinary_win(self):
+        round_ = Round(ScriptedCardSource(cards(5, 10, 6, 7, "K")))
+        round_.hit()
+        self.assertEqual(round_.player_hand.value, 21)
+        self.assertTrue(round_.is_complete)
+        self.assertEqual(round_.outcome.result, RoundResult.PLAYER_WIN)
+        self.assertEqual(round_.outcome.payout_multiplier, 1)
 
-def test_cardValue(game):
-    assert game.cardValue(MockCard('J')) == 10
-    assert game.cardValue(MockCard('A')) == 11
-    assert game.cardValue(MockCard(5)) == 5
+    def test_dealer_stands_on_soft_seventeen(self):
+        round_ = Round(ScriptedCardSource(cards(10, "A", 7, 6)))
+        round_.stand()
+        self.assertEqual(round_.dealer_hand.value, 17)
+        self.assertEqual(len(round_.dealer_hand.cards), 2)
+        self.assertEqual(round_.outcome.result, RoundResult.PUSH)
 
-def test_resetRound_deck_reshuffle(game):
-    #Force len(deck) < deckMin
-    while len(game.deck) >= game.deckMin:
-        game.deck.deal()   
-    game.resetRound()
-    assert len(game.deck) >= game.deckMin
-    #Only reset deck if strictly below deckMin
-    while len(game.deck) > game.deckMin:
-        game.deck.deal()
-    preResetLength = len(game.deck)
-    game.resetRound()
-    assert len(game.deck) == preResetLength  
+    def test_dealer_stands_on_initial_hard_seventeen_without_an_extra_draw(self):
+        round_ = Round(ScriptedCardSource(cards(10, 10, 7, 7)))
+        round_.stand()
+        self.assertEqual(round_.dealer_hand.value, 17)
+        self.assertEqual(len(round_.dealer_hand.cards), 2)
+        self.assertEqual(round_.outcome.result, RoundResult.PUSH)
 
-def test_compareHands(game):
-    #normal win/lose/draw scenarios
-    #normal win
-    game.resetRound()
-    game.player.score = 17
-    game.dealer.score = 16
-    game.compareHands()
-    assert game.player.win == True
-    assert game.dealer.win == False
-    #normal lose
-    game.resetRound()
-    game.player.score = 17
-    game.dealer.score = 18
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == True
-    #draw, no bust
-    game.resetRound()
-    game.dealer.score = 17
-    game.player.score = 17
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == False
-    #player bust, dealer <= 21
-    game.resetRound()
-    game.player.bust = True
-    game.dealer.score = 17
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == True
-    #player <= 21, dealer bust
-    game.resetRound()
-    game.player.score = 17
-    game.dealer.bust = True
-    game.compareHands()
-    assert game.player.win == True
-    assert game.dealer.win == False
-    #blackjack scenarios
-    #player with blackjack
-    game.resetRound()
-    game.player.blackjack = True
-    game.dealer.blackjack = False
-    game.compareHands()
-    assert game.player.win == True
-    assert game.dealer.win == False
-    #blackjack tie
-    game.resetRound()
-    game.player.blackjack = True
-    game.dealer.blackjack = True
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == False
-    #dealer with blackjack
-    game.resetRound()
-    game.player.blackjack = False
-    game.dealer.blackjack = True
-    game.compareHands()
-    assert game.player.win == False
-    assert game.dealer.win == True
- 
-def test_settleChips(game):
-    #normal win/lose/draw scenarios
-    game.player.chips = 1000
-    game.player.win = True
-    game.player.blackjack = False
-    game.settleChips()
-    assert game.player.chips == 1100
-    game.player.win = False
-    game.dealer.win = True
-    game.settleChips()
-    assert game.player.chips == 1000
-    game.player.win = False
-    game.dealer.win = False
-    game.settleChips()
-    assert game.player.chips == 1000
-    #win with blackjack
-    game.player.win = True
-    game.player.blackjack = True
-    game.settleChips()
-    assert game.player.chips == 1200
+    def test_player_bust_loses_the_current_wager(self):
+        round_ = Round(ScriptedCardSource(cards(10, 10, 9, 7, 5)))
+        round_.hit()
+        self.assertEqual(round_.outcome.result, RoundResult.DEALER_WIN)
+        self.assertEqual(round_.outcome.net_profit_units, -1)
 
-def test_playerPlay_hit_stand_quit(game, monkeypatch):
-    #hit until bust
-    inputs = iter(['h' for _ in range(13)])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    game.playerPlay()
-    assert game.player.bust == True
-    #stand immediately
-    game.resetRound()
-    inputs = iter(['s'])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    game.playerPlay()
-    assert game.player.bust == False
-    #invalid input followed by stand
-    game.resetRound()
-    inputs = iter(['x','s'])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    game.playerPlay()
-    assert game.player.bust == False
+    def test_dealer_bust_wins_the_current_wager(self):
+        round_ = Round(ScriptedCardSource(cards(10, 10, 8, 6, 10)))
+        round_.stand()
+        self.assertEqual(round_.outcome.result, RoundResult.PLAYER_WIN)
+        self.assertEqual(round_.outcome.net_profit_units, 1)
 
-def test_bjRound(game, monkeypatch):
-    inputs = iter(['s', 'h'])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    game.bjRound()
-    assert game.player.win in [True, False]  # Player either wins or loses
-    assert game.player.chips in [900, 1000, 1100, 1200]
+    def test_double_down_doubles_wager_draws_once_and_ends_turn(self):
+        round_ = Round(ScriptedCardSource(cards(5, 10, 6, 6, 10, 2)))
+        round_.double_down()
+        self.assertTrue(round_.is_complete)
+        self.assertEqual(len(round_.player_hand.cards), 3)
+        self.assertEqual(round_.wager_units, 2)
+        self.assertEqual(round_.outcome.result, RoundResult.PLAYER_WIN)
+        self.assertEqual(round_.outcome.net_profit_units, 2)
+
+    def test_double_down_to_twenty_one_is_an_ordinary_doubled_win(self):
+        round_ = Round(ScriptedCardSource(cards(5, 10, 6, 7, 10)))
+        round_.double_down()
+        self.assertEqual(round_.player_hand.value, 21)
+        self.assertEqual(round_.outcome.result, RoundResult.PLAYER_WIN)
+        self.assertEqual(round_.outcome.payout_multiplier, 1)
+        self.assertEqual(round_.outcome.net_profit_units, 2)
+
+    def test_double_down_bust_loses_the_doubled_wager(self):
+        round_ = Round(ScriptedCardSource(cards(10, 10, 6, 6, 10)))
+        round_.double_down()
+        self.assertEqual(round_.outcome.result, RoundResult.DEALER_WIN)
+        self.assertEqual(round_.outcome.wager_units, 2)
+        self.assertEqual(round_.outcome.net_profit_units, -2)
+
+    def test_double_down_is_unavailable_after_hitting(self):
+        round_ = Round(ScriptedCardSource(cards(5, 10, 6, 6, 2)))
+        round_.hit()
+        with self.assertRaises(ValueError):
+            round_.double_down()
+
+    def test_hidden_card_is_not_moved_out_of_the_dealer_hand(self):
+        round_ = Round(ScriptedCardSource(cards(10, 9, 7, 8)))
+        self.assertEqual(str(round_.dealer_upcard), "9H")
+        self.assertEqual(round_.dealer_hand.display(), ["9H", "8H"])
+
+    def test_interactive_bankroll_is_applied_outside_round_resolution(self):
+        game = BlackjackGame(bankroll=10)
+        game.player.apply_net_profit(-1.5)
+        self.assertEqual(game.player.bankroll, 8.5)

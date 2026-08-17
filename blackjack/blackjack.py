@@ -1,178 +1,129 @@
-from components.player import player
-from components.deck import deck
-from components.player import bjdealer
+from dataclasses import dataclass
+from enum import Enum, auto
 
-class Blackjack:
-    def __init__(self, startChips, payout, bjMultiplier, deckMin, dealerLimit):
-        self.deck = deck.Deck(([i for i in range(2,11)] + ['J','Q','K','A']), ['H','S','D','C'])
-        self.player = player.Player(startChips)
-        self.dealer = bjdealer.bjDealer()
-        self.deckMin = deckMin
-        self.payout = payout
-        self.bjPayout = payout*bjMultiplier
-        self.dealerLimit = dealerLimit
+from components.deck.deck import CardSource, InfiniteShoe
+from components.player.bjdealer import Dealer
+from components.player.hand import Hand
+from components.player.player import Player
 
-    def get_state(self):
-        return {
-            "player_hand": self.player.printHand(),
-            "player_score": self.player.score,
-            "player_chips": self.player.chips,
-            "dealer_hand": self.dealer.printHand(),
-            "dealer_score": self.dealer.score,
-        }
 
-    def log_state(self):
-        state = self.get_state()
-        print(f"Player: {state['player_hand']} (Score: {state['player_score']}, Chips: {state['player_chips']})")
-        print(f"Dealer: {state['dealer_hand']} (Score: {state['dealer_score']})")
+class RoundPhase(Enum):
+    PLAYER_TURN = auto()
+    COMPLETE = auto()
 
-    def cardValue(self, card):
-        match card.rank: 
-            case "J"|"Q"|"K":
-                return 10
-            case "A":
-                return 11
-            case _:
-                return int(card.rank)
 
-    def aceCount(self, agent):
-        aces = 0
-        for card in agent.hand:
-            if card.rank == "A":
-                aces += 1
-        return aces
+class RoundResult(Enum):
+    PLAYER_BLACKJACK = auto()
+    PLAYER_WIN = auto()
+    DEALER_WIN = auto()
+    PUSH = auto()
 
-    def handScore(self,agent):
-        newScore = 0 
-        aces = self.aceCount(agent)
-        for card in agent.hand:
-            newScore += self.cardValue(card)    
-        if newScore > 21 and aces > 0:
-            while aces > 0 and newScore > 21:
-                newScore -= 10
-                aces -= 1
-        agent.score = newScore
 
-    def isBlackjack(self, agent):
-        agent.blackjack = agent.score == 21 and len(agent.hand) == 2
+@dataclass(frozen=True)
+class RoundOutcome:
+    result: RoundResult
+    payout_multiplier: float
+    wager_units: float
+    player_total: int
+    dealer_total: int
 
-    def isBust(self,agent):
-        agent.bust = agent.score > 21
+    @property
+    def net_profit_units(self) -> float:
+        return self.payout_multiplier * self.wager_units
 
-    def resetRound(self):
-        self.player.reset()
-        self.dealer.reset()
-        if len(self.deck) < self.deckMin:
-            self.deck.reset()
 
-    def deal(self, agent):        
-        agent.getCard(self.deck.deal())
-        self.handScore(agent)
+class Round:
+    """A Stage 0 round, independent of bankroll constraints."""
 
-    def gameSetup(self):
-        self.deck.shuffle()
-        for i in range(0,2):
-            self.deal(self.player)
-        for i in range(0,2):
-            self.deal(self.dealer)
-        self.dealer.setFaceDown()
-        self.handScore(self.dealer)
+    def __init__(self, card_source: CardSource):
+        self._card_source = card_source
+        self.player_hand = Hand()
+        self.dealer = Dealer()
+        self.wager_units = 1
+        self.phase = RoundPhase.PLAYER_TURN
+        self.outcome: RoundOutcome | None = None
 
-    def dealerPlay(self):
-        self.dealer.flip()
-        self.log_state()
-        self.isBlackjack(self.dealer)
-        if self.dealer.blackjack:
-            print("Game is rigged!")
+        for _ in range(2):
+            self.player_hand.add(self._card_source.draw())
+            self.dealer.hand.add(self._card_source.draw())
+        self._resolve_initial_blackjacks()
+
+    @property
+    def dealer_hand(self) -> Hand:
+        return self.dealer.hand
+
+    @property
+    def is_complete(self) -> bool:
+        return self.phase is RoundPhase.COMPLETE
+
+    @property
+    def dealer_upcard(self):
+        return self.dealer_hand.cards[0]
+
+    def hit(self) -> None:
+        self._require_player_turn()
+        self.player_hand.add(self._card_source.draw())
+        if self.player_hand.is_bust:
+            self._complete(RoundResult.DEALER_WIN, -1)
+        elif self.player_hand.value == 21:
+            self._play_dealer_and_resolve()
+
+    def stand(self) -> None:
+        self._require_player_turn()
+        self._play_dealer_and_resolve()
+
+    def double_down(self) -> None:
+        self._require_player_turn()
+        if len(self.player_hand.cards) != 2:
+            raise ValueError("double down is available only on the initial two-card hand")
+        self.wager_units *= 2
+        self.player_hand.add(self._card_source.draw())
+        if self.player_hand.is_bust:
+            self._complete(RoundResult.DEALER_WIN, -1)
             return
-        while self.dealer.hitting:
-            print("Dealer hits.")
-            self.deal(self.dealer)
-            self.log_state()
-            self.dealer.isHit(self.dealerLimit)
-            self.isBust(self.dealer)
-            if self.dealer.bust: 
-                print("Dealer busts!")
-                return
-        print("Dealer stands.")
-        return
+        self._play_dealer_and_resolve()
 
-    def playerPlay(self):
-        self.isBlackjack(self.player)
-        if self.player.blackjack:
-            print("You hit Blackjack!")
-            return
-        while True:    
-            try:
-                playerAction = input("Stand (s) or Hit? (h): ").strip().lower()
-            except(EOFError, KeyboardInterrupt):
-                print("\nInterrupted, goodbye...")
-                return
-            if playerAction == "h":
-                print("You hit.")
-                self.deal(self.player)
-                self.handScore(self.player)
-                self.isBust(self.player)
-                self.log_state()
-                if self.player.bust:
-                    print("You bust!")    
-                    return 
-            elif playerAction == "s":
-                print("You stand.")
-                return
-            else:
-                print("Invalid input, enter 'h' to Hit or 's' to Stand.")
+    def _resolve_initial_blackjacks(self) -> None:
+        if self.player_hand.is_blackjack and self.dealer_hand.is_blackjack:
+            self._complete(RoundResult.PUSH, 0)
+        elif self.player_hand.is_blackjack:
+            self._complete(RoundResult.PLAYER_BLACKJACK, 1.5)
+        elif self.dealer_hand.is_blackjack:
+            self._complete(RoundResult.DEALER_WIN, -1)
 
-    def compareHands(self):
-        #player and dealer both blackjack
-        if self.player.blackjack and self.dealer.blackjack:
-            return  
-        #player blackjack, dealer not
-        if self.player.blackjack and not(self.dealer.blackjack):
-            self.player.win = True
-            return
-        #dealer blackjack, player not
-        if not(self.player.blackjack) and self.dealer.blackjack:
-            self.dealer.win = True
-            return
-        #player bust, dealer wins
-        if self.player.bust:
-            self.dealer.win = True
-            return
-        #player <= 21, dealer bust
-        if not(self.player.bust) and self.dealer.bust:
-            self.player.win = True
-            return
-
-        if self.player.score > self.dealer.score:
-            self.player.win = True
-        elif self.player.score < self.dealer.score:
-            self.dealer.win = True
+    def _play_dealer_and_resolve(self) -> None:
+        while self.dealer.should_hit:
+            self.dealer_hand.add(self._card_source.draw())
+        if self.dealer_hand.is_bust:
+            self._complete(RoundResult.PLAYER_WIN, 1)
+        elif self.player_hand.value > self.dealer_hand.value:
+            self._complete(RoundResult.PLAYER_WIN, 1)
+        elif self.player_hand.value < self.dealer_hand.value:
+            self._complete(RoundResult.DEALER_WIN, -1)
         else:
-            return
-        
-    def settleChips(self):
-        if self.player.win:
-            if self.player.blackjack:
-                self.player.chips += self.bjPayout
-            else:
-                self.player.chips += self.payout
-        elif self.dealer.win:
-            self.player.chips -= self.payout
-        else:
-            return
-        
-    def bjRound(self):
-        self.resetRound()
-        self.gameSetup()
-        self.log_state()
-        self.playerPlay()    
-        if self.player.bust:
-            #Dealer wins
-            self.compareHands()
-            return
-        self.dealerPlay()
-        self.log_state()            
-        self.compareHands()
-        self.settleChips()
-        return
+            self._complete(RoundResult.PUSH, 0)
+
+    def _complete(self, result: RoundResult, payout_multiplier: float) -> None:
+        self.phase = RoundPhase.COMPLETE
+        self.outcome = RoundOutcome(
+            result=result,
+            payout_multiplier=payout_multiplier,
+            wager_units=self.wager_units,
+            player_total=self.player_hand.value,
+            dealer_total=self.dealer_hand.value,
+        )
+
+    def _require_player_turn(self) -> None:
+        if self.phase is not RoundPhase.PLAYER_TURN:
+            raise RuntimeError("round is already complete")
+
+
+class BlackjackGame:
+    """Interactive shell; the core Round never enforces bankroll constraints."""
+
+    def __init__(self, bankroll: float = 0, card_source: CardSource | None = None):
+        self.player = Player(bankroll)
+        self.card_source = card_source if card_source is not None else InfiniteShoe()
+
+    def start_round(self) -> Round:
+        return Round(self.card_source)

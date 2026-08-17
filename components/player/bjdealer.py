@@ -1,26 +1,11 @@
-from .agent import Agent
+from .hand import Hand
 
-class bjDealer(Agent):
+
+class Dealer:
     def __init__(self):
-        super().__init__()
-        self.facedown = []
-        self.hitting = True
+        self.hand = Hand()
 
-    def flip(self):
-        if self.facedown:
-            self.getCard(self.facedown.pop())
-
-    def setFaceDown(self):
-        if self.hand:
-            self.facedown.append(self.hand.pop())
-
-    def isHit(self,limit):
-        if self.score >= limit:
-            self.hitting = False
-        else:
-            self.hitting = True
-    
-    def reset(self):
-        super().reset()
-        self.facedown = []
-        self.hitting = True
+    @property
+    def should_hit(self) -> bool:
+        """S17: stand on every 17, whether soft or hard."""
+        return self.hand.value < 17

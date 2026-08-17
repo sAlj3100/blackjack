@@ -1,36 +1,43 @@
-from blackjack import blackjack
+from blackjack.blackjack import BlackjackGame, RoundPhase
 
-START_CHIPS = 1000
-PAYOUT = 100
-DECK_LIMIT = 26
-BJ_MULTIPLIER = 2
-DEALER_LIM = 17
+
+STARTING_BANKROLL = 1000
+
+
+def show_round(round_, reveal_dealer: bool = False) -> None:
+    dealer_cards = round_.dealer_hand.display() if reveal_dealer else [str(round_.dealer_upcard), "??"]
+    dealer_value = round_.dealer_hand.value if reveal_dealer else "?"
+    print(f"Player: {round_.player_hand.display()} ({round_.player_hand.value})")
+    print(f"Dealer: {dealer_cards} ({dealer_value})")
+
+
+def play_round(game: BlackjackGame) -> None:
+    round_ = game.start_round()
+    while round_.phase is RoundPhase.PLAYER_TURN:
+        show_round(round_)
+        actions = "hit (h), stand (s), or double (d)" if len(round_.player_hand.cards) == 2 else "hit (h) or stand (s)"
+        action = input(f"{actions}: ").strip().lower()
+        if action == "h":
+            round_.hit()
+        elif action == "s":
+            round_.stand()
+        elif action == "d" and len(round_.player_hand.cards) == 2:
+            round_.double_down()
+        else:
+            print("Invalid action.")
+
+    show_round(round_, reveal_dealer=True)
+    outcome = round_.outcome
+    game.player.apply_net_profit(outcome.net_profit_units)
+    print(f"{outcome.result.name.replace('_', ' ').title()}: {outcome.net_profit_units:+g} units")
+    print(f"Bankroll: {game.player.bankroll:g} units")
+
 
 if __name__ == "__main__":
     try:
-        print("Blackjack good game yes?")
-        while True:
-            playGame = input("Play game? (y/n): ").strip().lower()
-            if playGame == 'n':
-                print("Ok pencil neck.")
-                break
-            elif playGame == 'y':
-                break
-            else:
-                print("Invalid input, y or n")     
-        game = blackjack.Blackjack(START_CHIPS, PAYOUT, BJ_MULTIPLIER, 26, DEALER_LIM)
-        while not game.player.isBrokie():
-            game.bjRound()
-            if game.player.isBrokie():
-                print("You're doneso brokie.")
-                break
-            again = input("Play another round? (y/n): ").strip().lower()
-            if again != 'y':
-                print("See you next time.")
-                break
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        exit(1)
+        game = BlackjackGame(bankroll=STARTING_BANKROLL)
+        print("Blackjack: S17, one-unit wager, blackjack pays 3:2.")
+        while input("Play a round? (y/n): ").strip().lower() == "y":
+            play_round(game)
     except (KeyboardInterrupt, EOFError):
-        print("\nInterrupted, goodbye...")
-        exit(0)
+        print("\nInterrupted, goodbye.")

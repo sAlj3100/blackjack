@@ -1,15 +1,6 @@
-from .agent import Agent
+class Player:
+    def __init__(self, bankroll: float):
+        self.bankroll = bankroll
 
-class Player(Agent):
-    def __init__(self, startChips):
-        super().__init__()
-        self.chips = startChips
-    
-    def isBrokie(self):    
-        return self.chips == 0
-
-    def gainChips(self, numChips):
-        self.chips += numChips
-
-    def loseChips(self, numChips):
-        self.chips -= numChips
+    def apply_net_profit(self, net_profit_units: float) -> None:
+        self.bankroll += net_profit_units
